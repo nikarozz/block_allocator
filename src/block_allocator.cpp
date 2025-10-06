@@ -76,8 +76,9 @@ void * BlockAllocator::allocate() {
   --free_count_;
 
   // Compute block index and mark as allocated
-  const std::size_t idx = ( reinterpret_cast< std::byte * >( node ) - region_ ) / stride_;
-  occupancy_[idx]       = 1;
+  const std::size_t idx =
+      ( reinterpret_cast< std::uintptr_t >( node ) - reinterpret_cast< std::uintptr_t >( region_ ) ) / stride_;
+  occupancy_[idx] = 1;
 
   return static_cast< void * >( node );
 }
@@ -112,7 +113,8 @@ std::size_t BlockAllocator::free_blocks() const noexcept {
 
 bool BlockAllocator::is_from_region_unlocked( const void * p ) const noexcept {
   auto addr = reinterpret_cast< const std::byte * >( p );
-  return addr >= region_ && addr < ( region_ + stride_ * block_count_ ) && ( ( addr - region_ ) % stride_ == 0 );
+  return addr >= region_ && addr < ( region_ + stride_ * block_count_ ) &&
+         ( ( reinterpret_cast< std::uintptr_t >( addr ) - reinterpret_cast< std::uintptr_t >( region_ ) ) % stride_ == 0 );
 }
 
 std::size_t BlockAllocator::index_from_ptr_unlocked( const void * p ) const {
