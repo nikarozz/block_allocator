@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <cstring>
 #include <new>
 
 namespace mem {
@@ -31,19 +30,23 @@ BlockAllocator::BlockAllocator( std::size_t block_size, std::size_t block_count,
     throw std::invalid_argument( "BlockAllocator: alignment must be a power of two and >= alignof(void*)" );
   }
 
+  // Make sure that each block can store a pointer to a free list, and round to align
   const std::size_t min_stride = std::max< std::size_t >( block_size_, sizeof( FreeNode ) );
   stride_                      = round_up( min_stride, alignment_ );
 
+  // Prevent overflow in total size calculation
   if ( stride_ > static_cast< std::size_t >( -1 ) / block_count_ ) {
     throw std::invalid_argument( "BlockAllocator: size overflow" );
   }
   const std::size_t total_size = stride_ * block_count_;
 
+  // posix_memalign requires alignment to be a multiple of sizeof(void*) and a power of two (already validated)
   region_ = static_cast< std::byte * >( allocate_aligned( alignment_, total_size ) );
   if ( !region_ ) {
     throw std::bad_alloc();
   }
 
+  // Build the free list by walking the blocks
   free_list_ = nullptr;
   for ( std::size_t i = 0; i < block_count_; ++i ) {
     auto * node = reinterpret_cast< FreeNode * >( region_ + i * stride_ );
@@ -67,10 +70,12 @@ void * BlockAllocator::allocate() {
     throw std::bad_alloc();
   }
 
+  // Pop from free list
   FreeNode * node = free_list_;
   free_list_      = free_list_->next;
   --free_count_;
 
+  // Compute block index and mark as allocated
   const std::size_t idx = ( reinterpret_cast< std::byte * >( node ) - region_ ) / stride_;
   occupancy_[idx]       = 1;
 
@@ -92,6 +97,7 @@ void BlockAllocator::deallocate( void * p ) {
     throw std::runtime_error( "BlockAllocator::deallocate: double free or corruption detected" );
   }
 
+  // Push back onto free list
   auto * node = reinterpret_cast< FreeNode * >( p );
   node->next  = free_list_;
   free_list_  = node;

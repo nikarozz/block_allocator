@@ -4,7 +4,23 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
-
+/**
+ * @file block_allocator.hpp
+ * @brief Fixed-size block memory allocator operating on a preallocated pool.
+ *
+ * This module provides a simple thread-safe block allocator that manages a pool of
+ * fixed-size blocks within a single contiguous region. It is intended as a practical
+ * building block for systems where predictable allocation behavior is required.
+ *
+ * Design notes:
+ *  - Thread-safety: guarded by a single std::mutex. Simplicity > lock-free cleverness.
+ *  - Each allocated block start is aligned to the user-specified alignment.
+ *  - A free-list is embedded in the blocks themselves.
+ *  - For safety, a small occupancy bitmap prevents double-free and invalid deallocation.
+ *
+ * @copyright
+ * No license. See README.md for details.
+ */
 namespace mem {
 /**
  * @class BlockAllocator
