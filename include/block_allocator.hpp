@@ -4,6 +4,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
+
 /**
  * @file block_allocator.hpp
  * @brief Fixed-size block memory allocator operating on a preallocated pool.
@@ -102,7 +103,7 @@ private:
 
   std::vector< std::uint8_t > occupancy_; // 0 = free, 1 = allocated (guard against double-free)
 
-  std::mutex mtx_;
+  mutable std::mutex mtx_;
 
   static constexpr bool is_power_of_two( std::size_t x ) noexcept { return x && ( ( x & ( x - 1 ) ) == 0 ); }
 

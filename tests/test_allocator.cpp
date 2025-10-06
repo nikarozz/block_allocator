@@ -125,3 +125,4 @@ TEST( BlockAllocator, StressWithContentionAndOOM ) {
 
   EXPECT_EQ( alloc.free_blocks(), blocks );
   EXPECT_GT( allocations.load(), 0 );
+}
